@@ -464,15 +464,16 @@ def parse_skills_from_javascript(html: str, soup: BeautifulSoup) -> str:
                 image_url = image_match.group(1) if image_match else ""
 
                 skill_name = "UNKNOWN"
-                if image_url and image_url in locked_skills_dict:
-                    html_name = locked_skills_dict[image_url].get('skill_name')
-                    if html_name:
-                        skill_name = html_name.upper()
-
-                if skill_name == "UNKNOWN" and image_url:
-                    name_match = re.search(r'skill[_/]S\d+[_/](.+?)[_/]\d+', image_url)
+                if image_url:
+                    # New URL format: skill_DEFENDING_2?verify=...
+                    name_match = re.search(r'skill_([a-zA-Z_]+)_\d+', image_url)
                     if name_match:
                         skill_name = name_match.group(1).replace('_', ' ').upper()
+                    else:
+                        # Fallback for old URL format: skill/S24/NAME/2
+                        name_match = re.search(r'skill[_/]S\d+[_/](.+?)[_/]\d+', image_url)
+                        if name_match:
+                            skill_name = name_match.group(1).replace('_', ' ').upper()
 
                 is_locked = False
                 unlock_requirement = None
