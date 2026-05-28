@@ -174,7 +174,7 @@ async def capture_real_headers():
 
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
-            headless=True,
+            headless=False,
             args=[
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
