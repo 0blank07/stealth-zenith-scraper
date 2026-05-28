@@ -1,0 +1,43 @@
+{
+  "api_url": "https://renderz.app/api/search/elasticsearch",
+  "discovered_at": "2026-04-22T19:13:54",
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.9",
+    "content-type": "application/json",
+    "cookie": "ads-counter-98422=0-1; page-views-count=1; ph_phc_87QnxWMnHCvnfZQcC3blBAsAI4GzNH4V6WFPiYP52O8_posthog=%7B%22%24device_id%22%3A%22019db69c-4026-7acd-a279-3bd76df46887%22%2C%22distinct_id%22%3A%22qISDUvCdmH2t51N%22%2C%22%24sesid%22%3A%5B1776885187155%2C%22019db69c-4051-751f-b12d-77d07273dd8e%22%2C1776885186617%5D%2C%22%24epp%22%3Atrue%2C%22%24initial_person_info%22%3A%7B%22r%22%3A%22%24direct%22%2C%22u%22%3A%22https%3A%2F%2Frenderz.app%2F24%2Fplayers%22%7D%2C%22%24user_state%22%3A%22identified%22%7D; clever-counter-75815=0-1",
+    "sec-ch-ua": "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"145\", \"Chrome\";v=\"145\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+    "x-client-fingerprint": "3598b77de960904230266d041169def2649a6250d70816afec42a338f12aaa3b",
+    "x-secure-token": "0.1776885187203.d533e3db3d97784fef9186de685382a942566b5339137d16a7b2affa57d0659f"
+  },
+  "note": "Captured from browser backup path",
+  "payload": {
+    "_source": [],
+    "from": 0,
+    "query": {
+      "bool": {
+        "must": [],
+        "must_not": [],
+        "should": []
+      }
+    },
+    "size": 40,
+    "sort": [
+      {
+        "rating": {
+          "order": "desc"
+        }
+      },
+      {
+        "assetId": {
+          "order": "desc"
+        }
+      }
+    ]
+  },
+  "sample_query": "messi",
+  "source_url": "https://renderz.app/24/players"
+}

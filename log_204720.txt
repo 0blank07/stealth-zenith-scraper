@@ -1,0 +1,26 @@
+[20:47:20] 🚀 Starting fix_colors_main
+[20:47:20] Loaded 198 IDs
+[20:47:20] 🌐 Capturing browser session...
+[20:47:30] ✅ Captured API request
+[20:47:33] 🍪 Injected 4 cookies
+[20:47:33] ⚠️ 403 → refreshing session
+[20:47:33] 🌐 Capturing browser session...
+[20:47:43] ✅ Captured API request
+[20:47:46] 🍪 Injected 4 cookies
+[20:47:46] ⚠️ 403 → refreshing session
+[20:47:46] 🌐 Capturing browser session...
+[20:47:56] ✅ Captured API request
+[20:47:59] 🍪 Injected 4 cookies
+[20:47:59] ⚠️ 403 → refreshing session
+[20:47:59] 🌐 Capturing browser session...
+[20:48:10] ✅ Captured API request
+[20:48:13] 🍪 Injected 7 cookies
+[20:48:13] ⚠️ 403 → refreshing session
+[20:48:13] 🌐 Capturing browser session...
+[20:48:23] ✅ Captured API request
+[20:48:26] 🍪 Injected 4 cookies
+[20:48:26] ⚠️ 403 → refreshing session
+[20:48:26] 🌐 Capturing browser session...
+[20:48:35] ✅ Captured API request
+[20:48:38] 🍪 Injected 4 cookies
+[20:48:39] ✅ Done. Updated 0

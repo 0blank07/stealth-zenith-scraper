@@ -1,0 +1,11 @@
+{
+  "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+  "Accept": "*/*",
+  "Accept-Language": "en-US,en;q=0.7",
+  "Content-Type": "application/json",
+  "Origin": "https://renderz.app",
+  "Referer": "https://renderz.app/24/players",
+  "x-client-fingerprint": "faaf2e81960a6b4e9d21139f2812f70e8d96221e5b0e93c4ffe04b0e5656de98",
+  "x-secure-token": "0.1771096982113.d26340738b5f11f0487002226a88fee701f38eca9806fa3995d9956e6a88d605",
+  "Cookie": "auth_session=6jcrdflran55u72qob653jur4kwm3yknikpcoff7"
+}

@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+
+# Logs
+*.log
+logs/
+
+# Temp Files
+.tmp_*.json
+
+# Backups
+*.backup
+*.backup.*
+backups/
+
+# User data
+user_data/
+persistent_profile/
+
+# Debug
+debug_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Cache
+.pytest_cache/
+
+# Reports if generated
+reports/
+
+# Archive
+archive/
