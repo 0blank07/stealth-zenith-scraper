@@ -53,24 +53,9 @@ def backup_db():
     except Exception as e:
         print(f"⚠️ Backup failed, but continuing... (Error: {e})")
 
-def upgrade_database_schema(cur):
-    """Add a 'created_at' clock to your database for the future"""
-    tables = ['player_stats', 'player_available_skills', 'skill_level_boosts', 'player_skills_meta']
-    print("⏳ Checking database schema for 'created_at' clock...")
-    
-    for table in tables:
-        cur.execute(f"""
-            SELECT COUNT(*) FROM information_schema.columns 
-            WHERE table_name = '{table}' AND column_name = 'created_at';
-        """)
-        if cur.fetchone()[0] == 0:
-            print(f"   ➕ Adding 'created_at' timestamp to {table}...")
-            cur.execute(f"ALTER TABLE {table} ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();")
-    print("✅ Database schema upgraded. All future scrapes will be timestamped!\n")
-
 def main():
     print("="*60)
-    print("ZENITH SCRAPER - CLEANUP & DATABASE UPGRADE")
+    print("ZENITH SCRAPER - PRECISION 24HR CLEANUP")
     print("="*60)
     
     backup_db()
@@ -79,46 +64,32 @@ def main():
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
         
-        # 1. First, upgrade the DB so this never happens again
-        upgrade_database_schema(cur)
-        conn.commit()
+        # Find all player IDs added in the last 24 hours using our new 'created_at' clock
+        print("⏳ Searching for players added to the database in the last 24 hours...")
         
-        # 2. Find the latest 'date_added' text in the database
-        print("⏳ Finding the most recently added players based on RenderZ date...")
-        cur.execute("SELECT date_added FROM player_stats WHERE date_added IS NOT NULL AND date_added != '' ORDER BY id DESC LIMIT 1;")
-        row = cur.fetchone()
-        
-        if not row:
-            print("❌ No players found in the database to delete.")
-            return
-
-        latest_date_text = row[0]
-        print(f"   📅 Latest date found: '{latest_date_text}'")
-        
-        # 3. Get all player IDs matching that exact date text
-        cur.execute("SELECT DISTINCT player_id FROM player_stats WHERE date_added = %s;", (latest_date_text,))
-        player_ids_to_delete = [r[0] for row in cur.fetchall() for r in [row]] # wait, the fetchall loop was wrong
-        
-        # Let's fix that query loop
-        cur.execute("SELECT DISTINCT player_id FROM player_stats WHERE date_added = %s;", (latest_date_text,))
+        cur.execute("""
+            SELECT DISTINCT player_id 
+            FROM player_stats 
+            WHERE created_at >= NOW() - INTERVAL '24 HOURS';
+        """)
         rows = cur.fetchall()
         player_ids_to_delete = [r[0] for r in rows]
         
         if not player_ids_to_delete:
-            print("✅ No players matching that date found.")
+            print("✅ No players found from the last 24 hours. Your database is clean!")
             return
 
-        print(f"🗑️  Found {len(player_ids_to_delete)} players added on {latest_date_text}. Deleting...")
+        print(f"🗑️  Found {len(player_ids_to_delete)} players to delete. Proceeding...")
         
-        # 4. Delete from all tables
+        # Delete from all tables
         tables = ['player_available_skills', 'skill_level_boosts', 'player_skills_meta', 'player_stats']
         for table in tables:
             cur.execute(f"DELETE FROM {table} WHERE player_id = ANY(%s);", (player_ids_to_delete,))
             print(f"   ✓ Deleted {cur.rowcount} rows from {table}")
         
         conn.commit()
-        print(f"\n✅ Cleanup of '{latest_date_text}' complete!")
-        print("🚀 You can now run `xvfb-run python3 weekly_update.py` for a fresh scrape.")
+        print(f"\n✅ Precision cleanup complete!")
+        print("🚀 You can now run your update command for a fresh scrape.")
         
     except Exception as e:
         print(f"\n❌ Error: {e}")
