@@ -191,6 +191,11 @@ async def capture_real_headers():
         )
 
         page = await context.new_page()
+        
+        # Human Simulation: Wiggle mouse
+        await page.mouse.move(100, 100)
+        await asyncio.sleep(0.5)
+        await page.mouse.move(400, 400)
 
         loop = asyncio.get_event_loop()
         fut: asyncio.Future = loop.create_future()
@@ -202,7 +207,11 @@ async def capture_real_headers():
         page.on("request", on_request)
 
         try:
-            await page.goto(PAGE_URL, wait_until="commit", timeout=60_000)
+            await page.goto(PAGE_URL, wait_until="domcontentloaded", timeout=60_000)
+            
+            # More human simulation: Scroll and wait
+            await page.mouse.wheel(0, 500)
+            await asyncio.sleep(2)
 
             try:
                 headers = await asyncio.wait_for(asyncio.shield(fut), timeout=30)
@@ -214,7 +223,7 @@ async def capture_real_headers():
                 log("POST not fired naturally — trying scroll trigger", "⚠️")
 
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
 
             if fut.done():
                 headers = fut.result()
@@ -224,7 +233,8 @@ async def capture_real_headers():
                 return headers
 
             log("Trying hard reload", "⚠️")
-            await page.reload(wait_until="commit", timeout=60_000)
+            await page.reload(wait_until="domcontentloaded", timeout=60_000)
+            await asyncio.sleep(5)
 
             try:
                 headers = await asyncio.wait_for(asyncio.shield(fut), timeout=30)
@@ -235,6 +245,10 @@ async def capture_real_headers():
             except asyncio.TimeoutError:
                 pass
 
+            # FAILURE DEBUGGING: Save what the browser sees
+            await page.screenshot(path="cloudflare_check.png")
+            log("Saved cloudflare_check.png for debugging", "🔍")
+            
             await browser.close()
             raise RuntimeError("Could not capture native browser API request")
 
