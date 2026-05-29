@@ -445,103 +445,112 @@ def parse_skills_from_javascript(html: str, soup: BeautifulSoup) -> str:
             return ""
 
         skills_data_str = match.group(1)
-        processed_skills = []
-        parts = skills_data_str.split('},{skill:')
-
-        for idx, part in enumerate(parts):
-            if idx == 0:
-                part = part.lstrip('[{')
+        
+        # 1. Build ID -> Name map and initial skill objects
+        skill_id_map = {}
+        initial_skills = []
+        
+        # Use regex to split skillsData more safely
+        skill_blocks = re.findall(r'\{skill:\{id:(\d+),image:"([^"]+)"(.*?)\},requirement:(null|\{skillId:\d+,level:\d+\})\}', skills_data_str, re.DOTALL)
+        
+        for sid_str, image_url, rest, req_json in skill_blocks:
+            sid = int(sid_str)
+            
+            # Extract name from URL
+            skill_name = "UNKNOWN"
+            name_match = re.search(r'skill_([a-zA-Z_]+)_\d+', image_url)
+            if name_match:
+                skill_name = name_match.group(1).replace('_', ' ').upper()
             else:
-                part = 'skill:' + part
-            if idx == len(parts) - 1:
-                part = part.rstrip('}]')
+                name_match = re.search(r'skill[_/]S\d+[_/](.+?)[_/]\d+', image_url)
+                if name_match:
+                    skill_name = name_match.group(1).replace('_', ' ').upper()
+            
+            skill_id_map[sid] = skill_name
+            
+            # Extract levels
+            processed_levels = []
+            level_objs = re.findall(r'\{id:\d+,level:(\d+),unlockedPositions:\[(.*?)\],abilityModifiers:\{([^}]+)\}\}', rest)
+            for l_num_str, l_pos_str, l_mods_str in level_objs:
+                l_num = int(l_num_str)
+                positions = re.findall(r'"([^"]+)"', l_pos_str)
+                boosts = {}
+                for stat_match in re.finditer(r'(\w+):(\d+)', l_mods_str):
+                    abbr, val = stat_match.group(1), int(stat_match.group(2))
+                    full_name = SKILL_STAT_MAPPING.get(abbr.lower(), abbr)
+                    boosts[full_name] = val
+                
+                if boosts:
+                    processed_levels.append({'level': l_num, 'positions': positions, 'boosts': boosts})
 
-            try:
-                skill_id_match = re.search(r'id:(\d+)', part)
-                skill_id = int(skill_id_match.group(1)) if skill_id_match else 0
+            # Handle lock status from HTML
+            is_locked = False
+            html_req = None
+            if image_url in locked_skills_dict:
+                lock_info = locked_skills_dict[image_url]
+                is_locked = lock_info['locked']
+                if lock_info['unlock_requirement_text']:
+                    html_req = parse_unlock_requirement(lock_info['unlock_requirement_text'])
 
-                image_match = re.search(r'image:"([^"]+)"', part)
-                image_url = image_match.group(1) if image_match else ""
+            # JS Requirement
+            js_req = None
+            if req_json != 'null':
+                js_req_match = re.search(r'skillId:(\d+),level:(\d+)', req_json)
+                if js_req_match:
+                    js_req = {
+                        'skill_id': int(js_req_match.group(1)),
+                        'level': int(js_req_match.group(2))
+                    }
 
-                skill_name = "UNKNOWN"
-                if image_url:
-                    # New URL format: skill_DEFENDING_2?verify=...
-                    name_match = re.search(r'skill_([a-zA-Z_]+)_\d+', image_url)
-                    if name_match:
-                        skill_name = name_match.group(1).replace('_', ' ').upper()
-                    else:
-                        # Fallback for old URL format: skill/S24/NAME/2
-                        name_match = re.search(r'skill[_/]S\d+[_/](.+?)[_/]\d+', image_url)
-                        if name_match:
-                            skill_name = name_match.group(1).replace('_', ' ').upper()
+            initial_skills.append({
+                'id': sid,
+                'name': skill_name,
+                'image': image_url,
+                'locked': is_locked,
+                'html_req': html_req,
+                'js_req': js_req,
+                'levels': processed_levels
+            })
 
-                is_locked = False
-                unlock_requirement = None
+        # 2. Final pass to link requirement names
+        processed_skills = []
+        for s in initial_skills:
+            # Consolidate requirements into standard format for importer
+            final_req = s['html_req']
+            
+            # If JS has more precise ID info, use it to ensure names match
+            prereqs = []
+            if s['js_req']:
+                req_sid = s['js_req']['skill_id']
+                req_name = skill_id_map.get(req_sid, "UNKNOWN")
+                
+                # Update unlock_requirement with the real skill name for the website
+                if not final_req:
+                    final_req = {
+                        'type': 'SKILL',
+                        'skill_name': req_name,
+                        'required_level': s['js_req']['level'],
+                        'text': f"Requires {req_name} Level {s['js_req']['level']}"
+                    }
+                elif final_req.get('skill_name') == "UNKNOWN":
+                    final_req['skill_name'] = req_name
+                
+                # Standardize key to 'prerequisites' (plural) as expected by importer
+                prereqs.append({
+                    'id': req_sid,
+                    'skill_name': req_name,
+                    'level': s['js_req']['level']
+                })
 
-                if image_url in locked_skills_dict:
-                    lock_info = locked_skills_dict[image_url]
-                    is_locked = lock_info['locked']
-                    if lock_info['unlock_requirement_text']:
-                        unlock_requirement = parse_unlock_requirement(lock_info['unlock_requirement_text'])
-
-                levels_match = re.search(r'levels:\[(.+?)\](?=\s*\})', part, re.DOTALL)
-                if not levels_match:
-                    continue
-
-                levels_str = levels_match.group(1)
-                processed_levels = []
-
-                level_objs = re.findall(r'\{id:\d+,level:\d+,unlockedPositions:\[[^\]]*\],abilityModifiers:\{[^}]+\}\}', levels_str)
-
-                for level_obj in level_objs:
-                    level_match = re.search(r'level:(\d+)', level_obj)
-                    if not level_match:
-                        continue
-                    level_num = int(level_match.group(1))
-
-                    pos_match = re.search(r'unlockedPositions:\[([^\]]*)\]', level_obj)
-                    positions = []
-                    if pos_match and pos_match.group(1):
-                        positions = re.findall(r'"([^"]+)"', pos_match.group(1))
-
-                    mods_match = re.search(r'abilityModifiers:\{([^}]+)\}', level_obj)
-                    boosts = {}
-                    if mods_match:
-                        for stat_match in re.finditer(r'(\w+):(\d+)', mods_match.group(1)):
-                            abbr = stat_match.group(1)
-                            val = int(stat_match.group(2))
-                            full_name = SKILL_STAT_MAPPING.get(abbr.lower(), abbr)
-                            boosts[full_name] = val
-
-                    if boosts:
-                        processed_levels.append({
-                            'level': level_num,
-                            'positions': positions,
-                            'boosts': boosts
-                        })
-
-                js_requirement = None
-                if 'requirement:null' not in part:
-                    req_match = re.search(r'requirement:\{skillId:(\d+),level:(\d+)\}', part)
-                    if req_match:
-                        js_requirement = {
-                            'skill_id': int(req_match.group(1)),
-                            'level': int(req_match.group(2))
-                        }
-
-                if processed_levels:
-                    processed_skills.append({
-                        'id': skill_id,
-                        'name': skill_name,
-                        'image': image_url,
-                        'locked': is_locked,
-                        'unlock_requirement': unlock_requirement,
-                        'prerequisite': js_requirement,
-                        'levels': processed_levels
-                    })
-
-            except Exception as e:
-                continue
+            processed_skills.append({
+                'id': s['id'],
+                'name': s['name'],
+                'image': s['image'],
+                'locked': s['locked'],
+                'unlock_requirement': final_req,
+                'prerequisites': prereqs, # PLURAL
+                'levels': s['levels']
+            })
 
         if processed_skills:
             return json.dumps({'skills': processed_skills}, ensure_ascii=False)

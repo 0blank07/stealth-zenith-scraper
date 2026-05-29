@@ -38,7 +38,15 @@ def process_skills_tree(json_file):
          unlock_requirement_level, unlock_requirement_text, 
          prerequisite_skill_id, prerequisite_level)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (player_id, rank, training_level, skill_id) 
+        DO UPDATE SET 
+            is_locked = EXCLUDED.is_locked,
+            unlock_requirement_type = EXCLUDED.unlock_requirement_type,
+            unlock_requirement_skillname = EXCLUDED.unlock_requirement_skillname,
+            unlock_requirement_level = EXCLUDED.unlock_requirement_level,
+            unlock_requirement_text = EXCLUDED.unlock_requirement_text,
+            prerequisite_skill_id = EXCLUDED.prerequisite_skill_id,
+            prerequisite_level = EXCLUDED.prerequisite_level
     """
 
     # Query for inserting into player_skills_meta
